@@ -29,7 +29,7 @@ public class EchoSubprotocolHandler extends AbstractSubprotocolHandler {
     }
 
     public boolean handle(ChannelHandlerContext context, WebSocketFrame frame, String subscriberPath) {
-        log.info("subprotocol executed");
+        log.info("subprotocol executed!");
         context.channel().writeAndFlush(frame.retain());
         return false;
     }
