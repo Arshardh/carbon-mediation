@@ -17,14 +17,14 @@
     <parent>
         <groupId>org.wso2.carbon.mediation</groupId>
         <artifactId>mediation-initializer</artifactId>
-        <version>4.6.3-SNAPSHOT</version>
+        <version>4.6.7-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>org.wso2.carbon.mediation.transport.handlers</artifactId>
     <packaging>bundle</packaging>
     <name>WSO2 Carbon Mediation - Transport Handlers</name>
-    <version>4.6.3-SNAPSHOT</version>
+    <version>4.6.7-SNAPSHOT</version>
 
     <build>
 
@@ -45,7 +45,7 @@
                         <Private-Package>
                         </Private-Package>
                         <Export-Package>
-                            org.wso2.carbon.mediation.transport.handlers
+                            org.wso2.carbon.mediation.transport.handlers.*
                         </Export-Package>
                         <Import-Package>
                             !javax.xml.namespace,
@@ -77,6 +77,9 @@
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.synapse</groupId>
+            <artifactId>synapse-core</artifactId>
+        </dependency>
     </dependencies>
-
 </project>

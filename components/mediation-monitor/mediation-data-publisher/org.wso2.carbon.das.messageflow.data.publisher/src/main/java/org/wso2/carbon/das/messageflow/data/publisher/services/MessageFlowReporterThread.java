@@ -20,6 +20,7 @@ package org.wso2.carbon.das.messageflow.data.publisher.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
+import org.apache.synapse.aspects.ComponentType;
 import org.apache.synapse.aspects.flow.statistics.data.raw.BasicStatisticDataUnit;
 import org.apache.synapse.aspects.flow.statistics.data.raw.CallbackDataUnit;
 import org.apache.synapse.aspects.flow.statistics.data.raw.StatisticDataUnit;
@@ -40,6 +41,8 @@ import java.util.Map;
  * Worker which processes statistic events and publish to analytic server.
  */
 public class MessageFlowReporterThread extends Thread {
+    public static final String IGNORE_ELEMENT = "IgnoreElement";
+    public static final int DEFAULT_HASHCODE = 0;
     private static Logger log = Logger.getLogger(MessageFlowReporterThread.class);
 
 
@@ -89,7 +92,7 @@ public class MessageFlowReporterThread extends Thread {
 
 //                    log.info("******* event list size - " + statisticsReportingEventHolder.getQueueSize() + " holder " +
 //                            "count - " + statisticsReportingEventHolder.countHolder.getStatCount() + " callback - " + statisticsReportingEventHolder.countHolder.getCallBackCount());
-                    processAndPublishEventList(statisticsReportingEventHolder.getEventList());
+                    processAndPublishEventList(statisticsReportingEventHolder);
                 } else {
                     delay();
                 }
@@ -99,13 +102,13 @@ public class MessageFlowReporterThread extends Thread {
         }
     }
 
-    private void processAndPublishEventList(List<StatisticsReportingEvent> eventList) {
+    private void processAndPublishEventList(StatisticsReportingEventHolder statisticsReportingEventHolder) {
 
 
         List<StatisticsReportingEvent> remainingEvents = new ArrayList<>();
         List<StatisticsLog> messageFlowLogs = new ArrayList<>();
 
-        for (StatisticsReportingEvent event : eventList) {
+        for (StatisticsReportingEvent event : statisticsReportingEventHolder.getEventList()) {
             if (event.getEventType() == AbstractStatisticEvent.EventType.STATISTICS_OPEN_EVENT) {
                 StatisticDataUnit statisticDataUnit = (StatisticDataUnit) event.getDataUnit();
                 StatisticsLog statisticsLog = new StatisticsLog(statisticDataUnit);
@@ -191,8 +194,36 @@ public class MessageFlowReporterThread extends Thread {
             }
         }
 
+        //Removing Unnecessary entries for API invocations
+        if ((ComponentType.API == messageFlowLogs.get(DEFAULT_HASHCODE).getComponentType()) && messageFlowLogs.size() > 3) {
+            for (int i = 2; i < messageFlowLogs.size(); i++) {
+                StatisticsLog statisticsLog = messageFlowLogs.get(i);
+                if (ComponentType.API == statisticsLog.getComponentType() && messageFlowLogs.get(DEFAULT_HASHCODE).getComponentId().equals
+                        (statisticsLog.getComponentId())) {
+                    messageFlowLogs.get(DEFAULT_HASHCODE).setEndTime(statisticsLog.getEndTime());
+
+                    statisticsLog.setStartTime(DEFAULT_HASHCODE);
+                    statisticsLog.setEndTime(DEFAULT_HASHCODE);
+                    statisticsLog.setComponentName(IGNORE_ELEMENT);
+                    statisticsLog.setComponentId(IGNORE_ELEMENT);
+                    statisticsLog.setComponentType(ComponentType.ANY);
+                    statisticsLog.setHashCode(DEFAULT_HASHCODE);
+                } else if (ComponentType.RESOURCE == statisticsLog.getComponentType() && messageFlowLogs.get(1)
+                        .getComponentId().equals(statisticsLog.getComponentId())) {
+                    messageFlowLogs.get(1).setEndTime(statisticsLog.getEndTime());
+
+                    statisticsLog.setStartTime(DEFAULT_HASHCODE);
+                    statisticsLog.setEndTime(DEFAULT_HASHCODE);
+                    statisticsLog.setComponentName(IGNORE_ELEMENT);
+                    statisticsLog.setComponentId(IGNORE_ELEMENT);
+                    statisticsLog.setComponentType(ComponentType.ANY);
+                    statisticsLog.setHashCode(DEFAULT_HASHCODE);
+                }
+            }
+        }
+
         PublishingFlow publishingFlow = TracingDataCollectionHelper.createPublishingFlow(messageFlowLogs);
-//        logEvent(publishingFlow);
+
         messageFlowObserverStore.notifyObservers(publishingFlow);
     }
 
