@@ -34,13 +34,13 @@ import org.wso2.carbon.mediator.datamapper.engine.input.InputBuilder;
 import org.wso2.carbon.mediator.datamapper.engine.input.builders.JSONBuilder;
 import org.wso2.carbon.mediator.datamapper.engine.utils.DataMapperEngineConstants;
 
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import javax.xml.namespace.QName;
 
 import static org.wso2.carbon.mediator.datamapper.engine.utils.DataMapperEngineConstants.ARRAY_ELEMENT_TYPE;
 import static org.wso2.carbon.mediator.datamapper.engine.utils.DataMapperEngineConstants.ATTRIBUTES_KEY;
@@ -167,8 +167,8 @@ public class XMLInputReader implements InputReader {
 
         nextJSONSchemaMap = buildNextSchema(jsonSchemaMap, elementType, nameSpaceLocalName);
         if (nextJSONSchemaMap == null) {
-            throw new ReaderException("Input type is incorrect or Invalid element found in the message payload : " +
-                                      nameSpaceLocalName);
+            throw new ReaderException(
+                    "Input type is incorrect or Invalid element found in the message payload : " + nameSpaceLocalName);
         }
         /* if this is new object preceding an array, close the array before writing the new element */
         if (prevElementName != null && !nameSpaceLocalName.equals(prevElementName)) {
@@ -452,6 +452,9 @@ public class XMLInputReader implements InputReader {
 
     private String getNamespacesAndIdentifiersAddedFieldName(String uri, String localName, OMElement omElement) {
         String modifiedLocalName = null;
+        String[] xsiNamespacePrefix;
+        String namespaceURI;
+        OMNamespace xsiNamespace = null;
         String prefix = getInputSchema().getPrefixForNamespace(uri);
         if (StringUtils.isNotEmpty(prefix)) {
             modifiedLocalName = prefix + SCHEMA_NAMESPACE_NAME_SEPARATOR + localName;
@@ -462,7 +465,16 @@ public class XMLInputReader implements InputReader {
         if (prefixInMap != null && omElement != null) {
             String xsiType = omElement.getAttributeValue(new QName(XSI_NAMESPACE_URI, "type", prefixInMap));
             if (xsiType != null) {
-                modifiedLocalName = modifiedLocalName + "," + prefixInMap + ":type=" + xsiType;
+                xsiNamespacePrefix = xsiType.split(":", 2);
+                xsiNamespace = omElement.findNamespaceURI(xsiNamespacePrefix[0]);
+                if (xsiNamespace != null) {
+                    namespaceURI = xsiNamespace.getNamespaceURI();
+                    modifiedLocalName = modifiedLocalName + "," + prefixInMap + ":type=" + getInputSchema()
+                            .getPrefixForNamespace(namespaceURI) + ":" + xsiNamespacePrefix[1];
+                }
+                else {
+                    modifiedLocalName = modifiedLocalName + "," + prefixInMap + ":type=" + xsiType;
+                }
             }
         }
         return modifiedLocalName;
@@ -566,7 +578,8 @@ public class XMLInputReader implements InputReader {
     }
 
     private String getModifiedFieldName(String fieldName) {
-        return fieldName.replace(SCHEMA_NAMESPACE_NAME_SEPARATOR, "_").replace(",", "_").replace("=", "_");
+        return fieldName.replace(SCHEMA_NAMESPACE_NAME_SEPARATOR, "_")
+                .replace(",", DataMapperEngineConstants.NAME_SEPERATOR).replace("=", "_");
     }
 
 }
