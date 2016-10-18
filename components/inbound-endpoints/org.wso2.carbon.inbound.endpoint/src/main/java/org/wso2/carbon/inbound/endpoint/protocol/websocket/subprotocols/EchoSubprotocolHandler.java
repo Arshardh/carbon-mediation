@@ -18,18 +18,16 @@ package org.wso2.carbon.inbound.endpoint.protocol.websocket.subprotocols;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.wso2.carbon.inbound.endpoint.protocol.websocket.AbstractSubprotocolHandler;
 
 public class EchoSubprotocolHandler extends AbstractSubprotocolHandler {
-    private static Logger log = LoggerFactory.getLogger(EchoSubprotocolHandler.class);
+
     public EchoSubprotocolHandler(){
         super.setSubprotocolIdentifier("echo");
     }
 
     public boolean handle(ChannelHandlerContext context, WebSocketFrame frame, String subscriberPath) {
-        log.info("subprotocol executed!");
+
         context.channel().writeAndFlush(frame.retain());
         return false;
     }
